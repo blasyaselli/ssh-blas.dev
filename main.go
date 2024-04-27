@@ -10,7 +10,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -87,6 +86,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		subtleStyle:    subtleStyle,
 		dotStyle:       dotStyle,
 		sess:           s,
+		runtime:        "",
 	}
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
 }
@@ -113,11 +113,14 @@ type model struct {
 	subtleStyle    lipgloss.Style
 	dotStyle       string
 	sess           ssh.Session
+	runtime        string
 }
 
 func (m model) Init() tea.Cmd {
 	return nil
 }
+
+type openNextRuntime struct{}
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -139,17 +142,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.Choice = 0
 			}
 		case "enter":
-			switch m.Choice {
-			case 0:
-				return m, openURL(m, RESUME_URL)
-			case 1:
-				return m, openURL(m, GITHUB_URL)
-			case 2:
-				return m, openURL(m, LINKEDIN_URL)
-			case 3:
-				return m, openURL(m, TWITTER_URL)
-			}
-
+			m.runtime = "linux"
+			return openByChoice(m)
+		}
+	case openNextRuntime:
+		switch m.runtime {
+		case "linux":
+			m.runtime = "darwin"
+			return openByChoice(m)
+		case "darwin":
+			m.runtime = "windows"
+			return openByChoice(m)
+		default:
+			m.runtime = ""
 		}
 	}
 	return m, nil
@@ -195,27 +200,41 @@ func checkbox(checkboxStyle lipgloss.Style, label string, checked bool) string {
 	return fmt.Sprintf("[ ] %s", label)
 }
 
+func openByChoice(m model) (tea.Model, tea.Cmd) {
+	switch m.Choice {
+	case 0:
+		return m, openURL(m, RESUME_URL)
+	case 1:
+		return m, openURL(m, GITHUB_URL)
+	case 2:
+		return m, openURL(m, LINKEDIN_URL)
+	case 3:
+		return m, openURL(m, TWITTER_URL)
+	}
+	return m, nil
+}
+
 func openURL(m model, url string) tea.Cmd {
 	var cmd string
 	var args []string
 
-	switch runtime.GOOS {
-	case "windows":
-		cmd = "cmd"
-		args = []string{"/c", "start"}
+	runtime := m.runtime
+
+	switch runtime {
+	case "linux":
+		cmd = "xdg-open"
 	case "darwin":
 		cmd = "open"
 	default:
-		cmd = "xdg-open"
+		cmd = "cmd"
+		args = []string{"/c", "start"}
 	}
 	args = append(args, url)
 	c := wish.Command(m.sess, cmd, args...)
 
-	cmdExec := tea.Exec(c, func(err error) tea.Msg {
-		if err != nil {
-			log.Error("shell finished", "error", err)
-		}
-		return nil
+	cmdExec := tea.Exec(c, func(_ error) tea.Msg {
+
+		return openNextRuntime{}
 	})
 	return cmdExec
 }
