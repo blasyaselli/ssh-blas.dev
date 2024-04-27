@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -22,7 +23,6 @@ import (
 	"github.com/charmbracelet/wish/activeterm"
 	"github.com/charmbracelet/wish/bubbletea"
 	"github.com/charmbracelet/wish/logging"
-	"github.com/pkg/browser"
 )
 
 const (
@@ -86,6 +86,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		checkboxStyle:  checkboxStyle,
 		subtleStyle:    subtleStyle,
 		dotStyle:       dotStyle,
+		sess:           s,
 	}
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
 }
@@ -111,6 +112,7 @@ type model struct {
 	checkboxStyle  lipgloss.Style
 	subtleStyle    lipgloss.Style
 	dotStyle       string
+	sess           ssh.Session
 }
 
 func (m model) Init() tea.Cmd {
@@ -139,13 +141,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			switch m.Choice {
 			case 0:
-				browser.OpenURL(RESUME_URL)
+				return m, openURL(m, RESUME_URL)
 			case 1:
-				browser.OpenURL(GITHUB_URL)
+				return m, openURL(m, GITHUB_URL)
 			case 2:
-				browser.OpenURL(LINKEDIN_URL)
+				return m, openURL(m, LINKEDIN_URL)
 			case 3:
-				browser.OpenURL(TWITTER_URL)
+				return m, openURL(m, TWITTER_URL)
 			}
 
 		}
@@ -191,4 +193,29 @@ func checkbox(checkboxStyle lipgloss.Style, label string, checked bool) string {
 		return checkboxStyle.Render("[x] " + label)
 	}
 	return fmt.Sprintf("[ ] %s", label)
+}
+
+func openURL(m model, url string) tea.Cmd {
+	var cmd string
+	var args []string
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = "cmd"
+		args = []string{"/c", "start"}
+	case "darwin":
+		cmd = "open"
+	default:
+		cmd = "xdg-open"
+	}
+	args = append(args, url)
+	c := wish.Command(m.sess, cmd, args...)
+
+	cmdExec := tea.Exec(c, func(err error) tea.Msg {
+		if err != nil {
+			log.Error("shell finished", "error", err)
+		}
+		return nil
+	})
+	return cmdExec
 }
