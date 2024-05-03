@@ -26,7 +26,7 @@ import (
 
 const (
 	host = "0.0.0.0"
-	port = "22"
+	port = "224"
 )
 
 func main() {
@@ -181,6 +181,10 @@ I'm fluent in Python, Go, Typescript, Javascript, Kotlin.
 
 	choices := fmt.Sprintf(
 		"%s\n%s\n%s\n%s",
+		// "Resume / CV",
+		// "GitHub (https://github.com/KaustubhPatange)",
+		// "Linkedin (https://linkedin.com/in/kaustubhpatange)",
+		// "Twitter (https://twitter.com/KP206)",
 		checkbox(m.checkboxStyle, "Resume / CV", c == 0),
 		checkbox(m.checkboxStyle, "GitHub", c == 1),
 		checkbox(m.checkboxStyle, "Linkedin", c == 2),
