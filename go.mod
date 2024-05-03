@@ -8,7 +8,6 @@ require (
 	github.com/charmbracelet/log v0.4.0
 	github.com/charmbracelet/ssh v0.0.0-20240401141849-854cddfa2917
 	github.com/charmbracelet/wish v1.4.0
-	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 )
 
 require (

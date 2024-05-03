@@ -70,7 +70,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	mainStyle := renderer.NewStyle().MarginLeft(2)
 	checkboxStyle := renderer.NewStyle().Bold(false).Foreground(lipgloss.Color("213"))
 	aboutStyle := renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("246"))
-	aboutNameStyle := renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("33"))
+	aboutNameStyle := renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("15"))
 	subtleStyle := renderer.NewStyle().Foreground(lipgloss.Color("241"))
 	dotStyle := renderer.NewStyle().Foreground(lipgloss.Color("236")).Render(dotChar)
 
@@ -174,21 +174,22 @@ Engineer.
 I'm fluent in Python, Go, Typescript, Javascript, Kotlin.
 `), m.aboutNameStyle.Render("Kaustubh Patange")))
 
-	c := m.Choice
-	tpl := m.subtleStyle.Render("j/k, up/down: select") + m.dotStyle +
-		m.subtleStyle.Render("enter: choose") + m.dotStyle +
-		m.subtleStyle.Render("q, ctrl+c: quit")
+	// c := m.Choice
+	tpl := //m.subtleStyle.Render("j/k, up/down: select") + m.dotStyle +
+		// m.subtleStyle.Render("enter: choose") + m.dotStyle +
+		m.subtleStyle.Render("Hint: q, ctrl+c: quit")
 
+	// choices := m.subtleStyle.Copy().Foreground(lipgloss.Color("221")).Render("Resume / CV    https://kaustubhpatange.com/resume")
 	choices := fmt.Sprintf(
 		"%s\n%s\n%s\n%s",
-		// "Resume / CV",
-		// "GitHub (https://github.com/KaustubhPatange)",
-		// "Linkedin (https://linkedin.com/in/kaustubhpatange)",
-		// "Twitter (https://twitter.com/KP206)",
-		checkbox(m.checkboxStyle, "Resume / CV", c == 0),
-		checkbox(m.checkboxStyle, "GitHub", c == 1),
-		checkbox(m.checkboxStyle, "Linkedin", c == 2),
-		checkbox(m.checkboxStyle, "Twitter", c == 3),
+		m.subtleStyle.Copy().Foreground(lipgloss.Color("222")).Render("Resume / CV    https://kaustubhpatange.com/resume"),
+		m.subtleStyle.Copy().Foreground(lipgloss.Color("13")).Render("GitHub         https://github.com/KaustubhPatange"),
+		m.subtleStyle.Copy().Foreground(lipgloss.Color("33")).Render("Linkedin       https://linkedin.com/in/kaustubhpatange"),
+		m.subtleStyle.Copy().Foreground(lipgloss.Color("39")).Render("Twitter        https://twitter.com/KP206"),
+		// checkbox(m.checkboxStyle, "Resume / CV", c == 0),
+		// checkbox(m.checkboxStyle, "GitHub", c == 1),
+		// checkbox(m.checkboxStyle, "Linkedin", c == 2),
+		// checkbox(m.checkboxStyle, "Twitter", c == 3),
 	)
 
 	// fmt.Println("Screensize", m.Width, m.Height)
