@@ -174,25 +174,15 @@ Engineer.
 I'm fluent in Python, Go, Typescript, Javascript, Kotlin.
 `), m.aboutNameStyle.Render("Kaustubh Patange")))
 
-	// c := m.Choice
-	tpl := //m.subtleStyle.Render("j/k, up/down: select") + m.dotStyle +
-		// m.subtleStyle.Render("enter: choose") + m.dotStyle +
-		m.subtleStyle.Render("Hint: q, ctrl+c: quit")
+	tpl := m.subtleStyle.Render("Hint: q, ctrl+c: quit")
 
-	// choices := m.subtleStyle.Copy().Foreground(lipgloss.Color("221")).Render("Resume / CV    https://kaustubhpatange.com/resume")
 	choices := fmt.Sprintf(
 		"%s\n%s\n%s\n%s",
 		m.subtleStyle.Copy().Foreground(lipgloss.Color("222")).Render("Resume / CV    https://kaustubhpatange.com/resume"),
 		m.subtleStyle.Copy().Foreground(lipgloss.Color("13")).Render("GitHub         https://github.com/KaustubhPatange"),
 		m.subtleStyle.Copy().Foreground(lipgloss.Color("33")).Render("Linkedin       https://linkedin.com/in/kaustubhpatange"),
 		m.subtleStyle.Copy().Foreground(lipgloss.Color("39")).Render("Twitter        https://twitter.com/KP206"),
-		// checkbox(m.checkboxStyle, "Resume / CV", c == 0),
-		// checkbox(m.checkboxStyle, "GitHub", c == 1),
-		// checkbox(m.checkboxStyle, "Linkedin", c == 2),
-		// checkbox(m.checkboxStyle, "Twitter", c == 3),
 	)
-
-	// fmt.Println("Screensize", m.Width, m.Height)
 
 	s := fmt.Sprintf("%s\n\n%s\n\n%s", about, choices, tpl)
 	return m.mainStyle.Render("\n" + s + "\n\n")
