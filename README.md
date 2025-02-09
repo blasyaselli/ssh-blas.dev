@@ -9,8 +9,9 @@ A terminal based portfolio written in Golang. A ssh server currently deployed on
 ```bash
 ssh kaustubhpatange.com
 ```
+___
 
-_Written tutorial coming soon._
+Article: https://kaustubhpatange.medium.com/standing-out-with-terminal-based-ssh-portfolio-aa7b6a2eb1ad
 
 ## License
 ```
