@@ -44,9 +44,9 @@ func main() {
 	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	log.Info("Starting SSH server", "host", host, "port", port)
 	go func() {
-		if err = s.ListenAndServe(); err != nil && !errors.Is(err, ssh.ErrServerClosed) {
-			log.Error("Could not start server", "error", err)
-			done <- nil
+	if err = s.ListenAndServe(); err != nil && !errors.Is(err, ssh.ErrServerClosed) {
+		log.Error("Could not start server", "error", err)
+		done <- os.Interrupt // replace nil
 		}
 	}()
 
@@ -61,7 +61,10 @@ func main() {
 
 func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	// This should never fail, as we are using the activeterm middleware.
-	pty, _, _ := s.Pty()
+	pty, _, ok := s.Pty()
+	if !ok || pty == nil {
+		return nil, nil
+	}
 
 	renderer := bubbletea.MakeRenderer(s)
 	mainStyle := renderer.NewStyle().MarginLeft(2)
@@ -212,14 +215,9 @@ func openURL(m model, url string) tea.Cmd {
 
 	runtime := m.runtime
 
-	switch runtime {
-	case "linux":
-		cmd = "xdg-open"
-	case "darwin":
-		cmd = "open"
-	default:
-		cmd = "cmd"
-		args = []string{"/c", "start"}
+	pty, _, ok := s.Pty()
+	if !ok || pty == nil {
+		return nil, nil
 	}
 	args = append(args, url)
 	c := wish.Command(m.sess, cmd, args...)
