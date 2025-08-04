@@ -1,225 +1,51 @@
 package main
 
 import (
-	"context"
 	"errors"
-	"fmt"
 	"net"
-	"os"
-	"os/signal"
-	"strings"
-	"syscall"
-	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
-	"github.com/charmbracelet/wish/bubbletea"
+	"github.com/charmbracelet/wish/logging"
 )
 
 const (
-	host = "0.0.0.0"
+	host = "localhost"
 	port = "22"
 )
 
 func main() {
-	s, err := wish.NewServer(
+	srv, err := wish.NewServer(
+		// The address the server will listen to.
 		wish.WithAddress(net.JoinHostPort(host, port)),
+
+		// The SSH server need its own keys, this will create a keypair in the
+		// given path if it doesn't exist yet.
+		// By default, it will create an ED25519 key.
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
+
+		// Middlewares do something on a ssh.Session, and then call the next
+		// middleware in the stack.
+		wish.WithMiddleware(
+			func(next ssh.Handler) ssh.Handler {
+				return func(sess ssh.Session) {
+					wish.Println(sess, "Hello, world!")
+					next(sess)
+				}
+			},
+
+			// The last item in the chain is the first to be called.
+			logging.Middleware(),
+		),
 	)
 	if err != nil {
 		log.Error("Could not start server", "error", err)
 	}
 
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	log.Info("Starting SSH server", "host", host, "port", port)
-	go func() {
-		if err = s.ListenAndServe(); err != nil && !errors.Is(err, ssh.ErrServerClosed) {
-			log.Error("Could not start server", "error", err)
-			done <- nil
-		}
-	}()
-
-	<-done
-	log.Info("Stopping SSH server")
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer func() { cancel() }()
-	if err := s.Shutdown(ctx); err != nil && !errors.Is(err, ssh.ErrServerClosed) {
-		log.Error("Could not stop server", "error", err)
+	if err = srv.ListenAndServe(); err != nil && !errors.Is(err, ssh.ErrServerClosed) {
+		// We ignore ErrServerClosed because it is expected.
+		log.Error("Could not start server", "error", err)
 	}
-}
-
-func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-	// This should never fail, as we are using the activeterm middleware.
-	pty, _, _ := s.Pty()
-
-	renderer := bubbletea.MakeRenderer(s)
-	mainStyle := renderer.NewStyle().MarginLeft(2)
-	checkboxStyle := renderer.NewStyle().Bold(false).Foreground(lipgloss.Color("213"))
-	aboutStyle := renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("246"))
-	aboutNameStyle := renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("15"))
-	subtleStyle := renderer.NewStyle().Foreground(lipgloss.Color("241"))
-	dotStyle := renderer.NewStyle().Foreground(lipgloss.Color("236")).Render(dotChar)
-
-	m := model{
-		Width:          pty.Window.Width,
-		Height:         pty.Window.Height,
-		Choice:         0,
-		Chosen:         false,
-		mainStyle:      mainStyle,
-		aboutStyle:     aboutStyle,
-		aboutNameStyle: aboutNameStyle,
-		checkboxStyle:  checkboxStyle,
-		subtleStyle:    subtleStyle,
-		dotStyle:       dotStyle,
-		sess:           s,
-		runtime:        "",
-	}
-	return m, []tea.ProgramOption{tea.WithAltScreen()}
-}
-
-const (
-	dotChar = " • "
-
-	RESUME_URL   = "https://drive.google.com/file/d/1azKao3idMCDqJdCHtCTlvc4U3ABYTtJ7/view?usp=sharing"
-	GITHUB_URL   = "https://github.com/KaustubhPatange"
-	LINKEDIN_URL = "https://www.linkedin.com/in/kaustubhpatange/"
-	TWITTER_URL  = "https://twitter.com/KP206"
-)
-
-// Just a generic tea.Model to demo terminal information of ssh.
-type model struct {
-	Width          int
-	Height         int
-	Choice         int
-	Chosen         bool
-	mainStyle      lipgloss.Style
-	aboutStyle     lipgloss.Style
-	aboutNameStyle lipgloss.Style
-	checkboxStyle  lipgloss.Style
-	subtleStyle    lipgloss.Style
-	dotStyle       string
-	sess           ssh.Session
-	runtime        string
-}
-
-func (m model) Init() tea.Cmd {
-	return nil
-}
-
-type openNextRuntime struct{}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.Width = msg.Width
-		m.Height = msg.Height
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c":
-			return m, tea.Quit
-		case "j", "down":
-			m.Choice++
-			if m.Choice > 3 {
-				m.Choice = 3
-			}
-		case "k", "up":
-			m.Choice--
-			if m.Choice < 0 {
-				m.Choice = 0
-			}
-		case "enter":
-			m.runtime = "linux"
-			return openByChoice(m)
-		}
-	case openNextRuntime:
-		switch m.runtime {
-		case "linux":
-			m.runtime = "darwin"
-			return openByChoice(m)
-		case "darwin":
-			m.runtime = "windows"
-			return openByChoice(m)
-		default:
-			m.runtime = ""
-		}
-	}
-	return m, nil
-}
-
-func (m model) View() string {
-
-	about := m.aboutStyle.Render(fmt.Sprintf(strings.TrimSpace(`
-Hi I'm %s,
-
-A self taught developer specialized in many software domains
-including Mobile Apps, Web, Backend, Gen AI.
-
-I'm currently working at an AI startup as a FullStack 
-Engineer.
-
-I'm fluent in Python, Go, Typescript, Javascript, Kotlin.
-`), m.aboutNameStyle.Render("Kaustubh Patange")))
-
-	tpl := m.subtleStyle.Render("Hint: q, ctrl+c: quit")
-
-	choices := fmt.Sprintf(
-		"%s\n%s\n%s\n%s",
-		m.subtleStyle.Copy().Foreground(lipgloss.Color("222")).Render("Resume / CV    https://kaustubhpatange.com/resume"),
-		m.subtleStyle.Copy().Foreground(lipgloss.Color("13")).Render("GitHub         https://github.com/KaustubhPatange"),
-		m.subtleStyle.Copy().Foreground(lipgloss.Color("33")).Render("Linkedin       https://linkedin.com/in/kaustubhpatange"),
-		m.subtleStyle.Copy().Foreground(lipgloss.Color("39")).Render("Twitter        https://twitter.com/KP206"),
-	)
-
-	s := fmt.Sprintf("%s\n\n%s\n\n%s", about, choices, tpl)
-	return m.mainStyle.Render("\n" + s + "\n\n")
-}
-
-func checkbox(checkboxStyle lipgloss.Style, label string, checked bool) string {
-	if checked {
-		return checkboxStyle.Render("[x] " + label)
-	}
-	return fmt.Sprintf("[ ] %s", label)
-}
-
-func openByChoice(m model) (tea.Model, tea.Cmd) {
-	switch m.Choice {
-	case 0:
-		return m, openURL(m, RESUME_URL)
-	case 1:
-		return m, openURL(m, GITHUB_URL)
-	case 2:
-		return m, openURL(m, LINKEDIN_URL)
-	case 3:
-		return m, openURL(m, TWITTER_URL)
-	}
-	return m, nil
-}
-
-func openURL(m model, url string) tea.Cmd {
-	var cmd string
-	var args []string
-
-	runtime := m.runtime
-
-	switch runtime {
-	case "linux":
-		cmd = "xdg-open"
-	case "darwin":
-		cmd = "open"
-	default:
-		cmd = "cmd"
-		args = []string{"/c", "start"}
-	}
-	args = append(args, url)
-	c := wish.Command(m.sess, cmd, args...)
-
-	cmdExec := tea.Exec(c, func(_ error) tea.Msg {
-
-		return openNextRuntime{}
-	})
-	return cmdExec
 }
