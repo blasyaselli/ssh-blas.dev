@@ -216,9 +216,7 @@ func openURL(m model, url string) tea.Cmd {
 	runtime := m.runtime
 
 	pty, _, ok := s.Pty()
-	if !ok || pty == nil {
-		return nil, nil
-	}
+	
 	args = append(args, url)
 	c := wish.Command(m.sess, cmd, args...)
 
