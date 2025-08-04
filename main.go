@@ -27,7 +27,7 @@ func main() {
 		wish.WithMiddleware(
 			func(next ssh.Handler) ssh.Handler {
 				return func(s ssh.Session) {
-					cmd := wish.Command(s, "bash", "ai chat")
+					cmd := wish.Command(s, "bash", "chat.sh")
 					if err := cmd.Run(); err != nil {
 						wish.Fatalln(s, err)
 					}
