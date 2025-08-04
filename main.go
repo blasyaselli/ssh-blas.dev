@@ -16,6 +16,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
+	"github.com/charmbracelet/wish/bubbletea"
 )
 
 const (
@@ -27,11 +28,6 @@ func main() {
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
-		//wish.WithMiddleware(
-			// bubbletea.Middleware(teaHandler),
-			//activeterm.Middleware(), // Bubble Tea apps usually require a PTY.
-			//logging.Middleware(),
-		//),
 	)
 	if err != nil {
 		log.Error("Could not start server", "error", err)
@@ -60,7 +56,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	// This should never fail, as we are using the activeterm middleware.
 	pty, _, _ := s.Pty()
 
-	// renderer := bubbletea.MakeRenderer(s)
+	renderer := bubbletea.MakeRenderer(s)
 	mainStyle := renderer.NewStyle().MarginLeft(2)
 	checkboxStyle := renderer.NewStyle().Bold(false).Foreground(lipgloss.Color("213"))
 	aboutStyle := renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("246"))
