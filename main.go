@@ -16,9 +16,6 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
-	"github.com/charmbracelet/wish/activeterm"
-	"github.com/charmbracelet/wish/bubbletea"
-	"github.com/charmbracelet/wish/logging"
 )
 
 const (
@@ -63,7 +60,7 @@ func teaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 	// This should never fail, as we are using the activeterm middleware.
 	pty, _, _ := s.Pty()
 
-	renderer := bubbletea.MakeRenderer(s)
+	// renderer := bubbletea.MakeRenderer(s)
 	mainStyle := renderer.NewStyle().MarginLeft(2)
 	checkboxStyle := renderer.NewStyle().Bold(false).Foreground(lipgloss.Color("213"))
 	aboutStyle := renderer.NewStyle().Bold(true).Foreground(lipgloss.Color("246"))
