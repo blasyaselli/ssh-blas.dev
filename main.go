@@ -30,11 +30,11 @@ func main() {
 	s, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
-		wish.WithMiddleware(
-			bubbletea.Middleware(teaHandler),
-			activeterm.Middleware(), // Bubble Tea apps usually require a PTY.
-			logging.Middleware(),
-		),
+		//wish.WithMiddleware(
+			// bubbletea.Middleware(teaHandler),
+			//activeterm.Middleware(), // Bubble Tea apps usually require a PTY.
+			//logging.Middleware(),
+		//),
 	)
 	if err != nil {
 		log.Error("Could not start server", "error", err)
